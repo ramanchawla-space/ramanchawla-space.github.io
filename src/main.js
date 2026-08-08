@@ -51,7 +51,9 @@ class Game {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
 
     this.scene = new THREE.Scene()
-    this.camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 6000)
+    // far must exceed the Sky dome's 20000-unit scale, or the sky is clipped
+    // out of the frustum entirely and the horizon renders as flat clear-colour.
+    this.camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 40000)
     this.chase = new ChaseCamera(this.camera)
 
     window.addEventListener('resize', () => {

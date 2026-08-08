@@ -47,19 +47,24 @@ export class Environment {
     sky.scale.setScalar(20000)
     this.scene.add(sky)
 
+    // Sunset atmosphere. High turbidity with low rayleigh washes the sky to grey,
+    // so keep turbidity modest and rayleigh high enough for real blue scattering
+    // overhead, with mie providing the warm glow near the sun.
     const u = sky.material.uniforms
-    u.turbidity.value = 8
-    u.rayleigh.value = 2.4
-    u.mieCoefficient.value = 0.006
-    u.mieDirectionalG.value = 0.86
+    u.turbidity.value = 4
+    u.rayleigh.value = 1.2
+    u.mieCoefficient.value = 0.02
+    u.mieDirectionalG.value = 0.94
 
-    // Low sun for long shadows and warm rim light.
-    const phi = THREE.MathUtils.degToRad(90 - 11)
+    // Sun kept a little higher: below ~5° the whole sky desaturates to haze.
+    const phi = THREE.MathUtils.degToRad(90 - 16)
     const theta = THREE.MathUtils.degToRad(122)
     this.sun.setFromSphericalCoords(1, phi, theta)
     u.sunPosition.value.copy(this.sun)
 
-    this.scene.fog = new THREE.FogExp2(0xdcb894, 0.0016)
+    // Light haze only. Denser than ~0.0005 and the volcano and rice terraces
+    // wash out to flat white before you can see them.
+    this.scene.fog = new THREE.FogExp2(0xe8c9a4, 0.00045)
 
     // Use the sky as the environment map so metal/rough surfaces pick up
     // real sky colour instead of looking flat.
