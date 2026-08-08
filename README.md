@@ -81,4 +81,22 @@ foliage and terrain in identical positions — necessary when racing the same
 track. Textures load from a CDN with procedural fallbacks, so a blocked
 corporate network degrades the look instead of breaking the game.
 
-Deployment is via GitHub Actions on push to `main`.
+## Deploying
+
+```bash
+./deploy.sh
+```
+
+Builds and force-pushes `dist/` to the `gh-pages` branch, which Pages serves.
+Allow about a minute for GitHub's CDN to pick up the change.
+
+GitHub Actions would be tidier, but pushing `.github/workflows/` requires the
+`workflow` token scope, which this machine's `gh` login doesn't have. To switch
+over:
+
+```bash
+gh auth refresh -s workflow
+mkdir -p .github/workflows && mv .ci-backup/deploy.yml .github/workflows/
+```
+
+then set the Pages source to "GitHub Actions" in the repo settings.
