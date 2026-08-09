@@ -232,6 +232,92 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 @keyframes blink { to { visibility: hidden; } }
 
+/* ---------- Hazards ---------- */
+
+/* Full-screen tint while a hazard effect is active. Vignette only — the middle
+   stays clear so it never obscures the road you are trying to save. */
+.damage {
+  position: absolute; inset: 0; pointer-events: none;
+  transition: opacity .18s ease;
+}
+.damage.burn {
+  box-shadow: inset 0 0 220px 60px rgba(255, 92, 20, 0.55);
+  animation: burnpulse .35s ease-in-out infinite alternate;
+}
+.damage.spin { box-shadow: inset 0 0 200px 50px rgba(255, 214, 90, 0.32); }
+.damage.water {
+  box-shadow: inset 0 0 260px 90px rgba(20, 130, 170, 0.75);
+  backdrop-filter: blur(3px) saturate(1.4);
+}
+@keyframes burnpulse { to { box-shadow: inset 0 0 260px 80px rgba(255, 130, 30, 0.72); } }
+
+/* "Hazard ahead" chip, bottom-centre — out of the way of the racing line. */
+.hazard-warn {
+  position: absolute; bottom: 92px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 15px; border-radius: 99px;
+  background: rgba(6, 32, 42, 0.78); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 200, 90, 0.45);
+  font-size: 14px; font-weight: 800; letter-spacing: .4px;
+  color: #ffd98a; white-space: nowrap;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+.hazard-warn .hw-ico { font-size: 15px; }
+.hazard-warn .hw-bar {
+  width: 62px; height: 5px; border-radius: 99px;
+  background: rgba(255,255,255,0.16); overflow: hidden;
+}
+.hazard-warn .hw-fill {
+  display: block; width: 100%; height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--sun), #ff5252);
+  transform-origin: left center; transform: scaleX(0);
+  transition: transform .15s linear;
+}
+.hazard-warn.urgent {
+  border-color: #ff5252; color: #ff8a80;
+  animation: warnpulse .5s ease-in-out infinite alternate;
+}
+@keyframes warnpulse { to { background: rgba(70, 12, 12, 0.85); } }
+
+/* Impact flash — deliberately loud, but short. */
+.hazard-hit {
+  position: absolute; top: 44%; left: 50%; transform: translateX(-50%);
+  font-size: 46px; font-weight: 900; color: #ff5252;
+  letter-spacing: 2px;
+  text-shadow: 0 0 34px rgba(255,60,40,0.9), 0 6px 26px rgba(0,0,0,0.85);
+  animation: hitpop .9s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes hitpop {
+  0% { opacity: 0; transform: translateX(-50%) scale(1.9) rotate(-4deg); }
+  16% { opacity: 1; transform: translateX(-50%) scale(1) rotate(2deg); }
+  30% { transform: translateX(-50%) scale(1.05) rotate(-1deg); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) scale(0.96); }
+}
+
+/* Zone name, announced on entry. */
+.zone-name {
+  position: absolute; top: 84px; left: 50%; transform: translateX(-50%);
+  padding: 7px 18px; border-radius: 99px;
+  background: rgba(6, 32, 42, 0.7); backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  font-size: 15px; font-weight: 800; letter-spacing: .5px;
+  white-space: nowrap; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+.zone-name.show { animation: zonein 2.6s ease forwards; }
+@keyframes zonein {
+  0% { opacity: 0; transform: translate(-50%, -12px); }
+  12% { opacity: 1; transform: translate(-50%, 0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (max-width: 640px) {
+  .hazard-hit { font-size: 32px; }
+  .hazard-warn { bottom: 150px; font-size: 12px; }
+  .zone-name { font-size: 12px; top: 70px; }
+}
+
 /* ---------- Results ---------- */
 .trophy { font-size: 60px; text-align: center; }
 .win-title { text-align: center; font-size: 32px; font-weight: 900; margin: 4px 0 18px; }

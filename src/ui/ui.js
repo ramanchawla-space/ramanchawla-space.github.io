@@ -3,6 +3,19 @@
 
 const AVATARS = ['🐵', '🦊', '🐯', '🦁', '🐸', '🐨', '🐼', '🦄', '🐲', '🦖', '🐙', '🦩', '🐝', '🦜', '🐳', '🦈', '🌺', '🥥']
 
+// Friendly names for the track's zones, announced as you ride into each one.
+const ZONE_LABELS = {
+  beach: '🏖️ Kuta Beach Straight',
+  coast: '🌊 Coast Road',
+  temple: '🛕 Pura Headland',
+  jungle: '🌴 Jungle Gorge',
+  causeway: '🌉 River Causeway — NARROW',
+  terrace: '🌾 Tegallalang Terraces',
+  volcano: '🌋 Agung Switchbacks',
+  village: '🏘️ Village Street',
+  descent: '⛰️ Descent to the Sea',
+}
+
 const $ = (id) => document.getElementById(id)
 
 export class UI {
@@ -20,6 +33,8 @@ export class UI {
       results: $('results'), podium: $('podium'), resultList: $('result-list'),
       again: $('again'), againNote: $('again-note'),
       connToast: $('conn-toast'), touch: $('touch'),
+      hazardWarn: $('hazard-warn'), hazardHit: $('hazard-hit'),
+      damage: $('damage'), zoneName: $('zone-name'),
     }
 
     this.avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)]
@@ -143,6 +158,52 @@ export class UI {
   }
 
   setWrongWay(on) { this.el.wrongway.classList.toggle('hidden', !on) }
+
+  // --- Hazards ---
+
+  // Persistent "hazard ahead" chip. The bar fills as you close on it, so it
+  // reads as an approach rather than a static label.
+  setHazardWarning(text, distance) {
+    const el = this.el.hazardWarn
+    if (!text) { el.classList.add('hidden'); return }
+    el.classList.remove('hidden')
+    el.querySelector('.hw-text').textContent = text
+    // 55m out → empty, at the hazard → full.
+    const close = Math.max(0, Math.min(1, 1 - distance / 55))
+    el.querySelector('.hw-fill').style.transform = `scaleX(${close.toFixed(3)})`
+    el.classList.toggle('urgent', close > 0.62)
+  }
+
+  // Big centre-screen flash the moment you hit something.
+  hazardHit(text) {
+    const el = this.el.hazardHit
+    el.textContent = text
+    el.classList.remove('hidden')
+    el.style.animation = 'none'
+    void el.offsetWidth          // restart the CSS animation
+    el.style.animation = ''
+    clearTimeout(this._hitTimer)
+    this._hitTimer = setTimeout(() => el.classList.add('hidden'), 900)
+  }
+
+  // Full-screen tint while you're spinning out, on fire, or in the river.
+  setHazardEffect({ spinning, burning, falling }) {
+    const el = this.el.damage
+    el.classList.toggle('spin', !!spinning)
+    el.classList.toggle('burn', !!burning)
+    el.classList.toggle('water', !!falling)
+    el.classList.toggle('hidden', !spinning && !burning && !falling)
+  }
+
+  setZone(name) {
+    const el = this.el.zoneName
+    el.textContent = ZONE_LABELS[name] || name
+    el.classList.remove('hidden', 'show')
+    void el.offsetWidth
+    el.classList.add('show')
+    clearTimeout(this._zoneTimer)
+    this._zoneTimer = setTimeout(() => el.classList.add('hidden'), 2600)
+  }
 
   countdown(text) {
     const el = this.el.countdown

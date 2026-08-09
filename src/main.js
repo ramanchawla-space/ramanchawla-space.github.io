@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { Track } from './game/track.js'
 import { Environment } from './game/environment.js'
+import { Obstacles } from './game/obstacles.js'
 import { Vehicle, VEHICLE_SPECS, PLAYER_COLORS } from './game/vehicle.js'
 import { RiderPhysics } from './game/physics.js'
 import { ChaseCamera } from './game/camera.js'
@@ -83,11 +84,17 @@ class Game {
     this.track = new Track()
     this.scene.add(this.track.build(textures))
 
-    this.ui.setProgress(0.78, 'Planting palm trees…')
+    this.ui.setProgress(0.74, 'Planting palm trees…')
     await nextFrame()
 
     this.env = new Environment(this.scene, this.renderer, this.track, textures)
     this.env.build()
+
+    this.ui.setProgress(0.9, 'Rolling rocks onto the road…')
+    await nextFrame()
+
+    this.obstacles = new Obstacles(this.track)
+    this.scene.add(this.obstacles.build())
 
     this.ui.setProgress(0.95, 'Almost there…')
     await nextFrame()
@@ -349,7 +356,12 @@ class Game {
       this.vehicles.set(p.id, vehicle)
 
       if (p.id === this.myId) {
-        this.me = new RiderPhysics(this.track, VEHICLE_SPECS[p.vehicle] || VEHICLE_SPECS.scooter, start)
+        this.me = new RiderPhysics(
+          this.track,
+          VEHICLE_SPECS[p.vehicle] || VEHICLE_SPECS.scooter,
+          start,
+          this.obstacles
+        )
         this.meProfile = p
       } else {
         const r = new RemoteRider()
@@ -469,6 +481,7 @@ class Game {
       this._elapsed += dt
 
       this.env.update(dt, this._elapsed)
+      this.obstacles.update(dt, this._elapsed)
 
       if (this.state === STATE.RACING || this.state === STATE.COUNTDOWN) {
         this._updateRace(dt)
@@ -477,6 +490,7 @@ class Game {
         this.env.focusShadow(this._menuTarget)
       }
 
+      this.obstacles.faceCamera(this.camera)
       this.renderer.render(this.scene, this.camera)
     }
     tick()
@@ -519,8 +533,13 @@ class Game {
 
       this.chase.follow(this.me, dt)
       if (this.me.onDirt && this.me.speed > 8) this.chase.addShake(dt * 0.5)
+      // An impact or a spin-out rattles the camera far harder than gravel does.
+      if (this.me.hitFlash > 0) this.chase.addShake(dt * 3.5)
+      if (this.me.spinOut > 0) this.chase.addShake(dt * 1.2)
       this.env.focusShadow(this.me.position)
       this.ui.setWrongWay(racing && this.me.wrongWay && !this.me.finished)
+
+      if (racing) this._updateHazardUi(dt)
     }
 
     // --- Remote riders ---
@@ -546,6 +565,38 @@ class Game {
     }
 
     this._updateHud()
+  }
+
+  // Hazard feedback: an advance warning for what's coming, an impact flash for
+  // what you just hit, and the name of the stretch of island you're riding.
+  _updateHazardUi(dt) {
+    const me = this.me
+
+    // Impact banner — shown briefly, and only re-triggered on a new hit.
+    if (me.hitFlash > 0 && me.lastHit !== this._shownHit) {
+      this._shownHit = me.lastHit
+      if (me.lastHit.warn) this.ui.hazardHit(me.lastHit.warn)
+    } else if (me.hitFlash <= 0) {
+      this._shownHit = null
+    }
+
+    this.ui.setHazardEffect({ spinning: me.spinOut > 0, burning: me.onFire > 0, falling: me.falling })
+
+    // Look ahead for the next hazard worth calling out. Re-check a few times a
+    // second rather than every frame: the lookup walks the whole hazard table.
+    this._warnAccum = (this._warnAccum || 0) + dt
+    if (this._warnAccum >= 0.15) {
+      this._warnAccum = 0
+      const w = me.warning
+      this.ui.setHazardWarning(w ? w.item.spec.warn : null, w ? w.distance : 0)
+    }
+
+    // Zone name, so players learn the circuit's landmarks.
+    const zone = me.zone?.name
+    if (zone && zone !== this._shownZone) {
+      this._shownZone = zone
+      this.ui.setZone(zone)
+    }
   }
 
   _sendState() {
@@ -627,6 +678,9 @@ const game = new Game()
 // Exposed for the headless test harness (and handy when debugging in the
 // browser console). Harmless in production — it exposes no secrets.
 window.__game = game
+// The scenery-clearance and screenshot harnesses need a THREE handle to build
+// raycasters against the live scene.
+window.__THREE = THREE
 game.boot().catch((err) => {
   console.error(err)
   document.getElementById('load-text').textContent =

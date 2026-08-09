@@ -58,12 +58,21 @@ try {
 
   // Let it genuinely drive the opening stretch so real physics + lap counting
   // are exercised, then skip ahead. Headless software WebGL manages only ~4fps,
-  // so driving all 1164m would take many minutes of wall clock and makes this
+  // so driving the full lap would take many minutes of wall clock and makes this
   // suite a hardware-speed test rather than a correctness test.
-  await new Promise(r => setTimeout(r, 8000))
-  const drove = await page.evaluate(() => window.__game.me.lapProgress)
-  console.log('  drove under real physics to progress=' + drove.toFixed(3))
-  if (!(drove > 0.01)) throw new Error('Autopilot failed to make progress: ' + drove)
+  //
+  // The first ~3s are the countdown, so allow enough wall clock after it for the
+  // bot to be clearly moving. Assert on metres travelled, not lap fraction:
+  // lapProgress is a fraction of the circuit, so the same real driving yields a
+  // smaller number on a longer track and the threshold silently tightens
+  // whenever the layout changes.
+  await new Promise(r => setTimeout(r, 12000))
+  const { drove, metres } = await page.evaluate(() => ({
+    drove: window.__game.me.lapProgress,
+    metres: window.__game.me.raceDistance,
+  }))
+  console.log(`  drove under real physics to progress=${drove.toFixed(3)} (${metres.toFixed(1)} m)`)
+  if (!(metres > 10)) throw new Error(`Autopilot failed to make progress: ${metres.toFixed(1)} m`)
 
   await page.evaluate(() => {
     const g = window.__game
