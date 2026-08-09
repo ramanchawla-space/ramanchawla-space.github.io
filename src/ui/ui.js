@@ -35,6 +35,7 @@ export class UI {
       connToast: $('conn-toast'), touch: $('touch'),
       hazardWarn: $('hazard-warn'), hazardHit: $('hazard-hit'),
       damage: $('damage'), zoneName: $('zone-name'),
+      muteBtn: $('mute-btn'),
     }
 
     this.avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)]
@@ -147,7 +148,9 @@ export class UI {
 
   setStandings(rows, myId) {
     this.el.standings.innerHTML = ''
-    rows.slice(0, 8).forEach((r, i) => {
+    // Show every racer — up to MAX_PLAYERS (12), never more than fit the list —
+    // so nobody in the lobby is missing from their own standings.
+    rows.forEach((r, i) => {
       const d = document.createElement('div')
       d.className = 'srow' + (r.id === myId ? ' me' : '')
       d.style.setProperty('--c', r.color)
@@ -158,6 +161,11 @@ export class UI {
   }
 
   setWrongWay(on) { this.el.wrongway.classList.toggle('hidden', !on) }
+
+  setMuted(muted) {
+    this.el.muteBtn.textContent = muted ? '🔇' : '🔊'
+    this.el.muteBtn.classList.toggle('off', muted)
+  }
 
   // --- Hazards ---
 

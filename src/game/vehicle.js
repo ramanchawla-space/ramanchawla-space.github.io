@@ -286,7 +286,9 @@ export class Vehicle {
     this.chassis.add(this.rider)
 
     this.group.add(this.chassis)
-    this.group.add(makeLabel(name, color))
+    // Skip your own nameplate — you know who you are, and at chase-cam
+    // distance it would sit right in the middle of the view ahead.
+    if (!isLocal) this.group.add(makeLabel(name, color))
 
     this.group.traverse(o => { if (o.isMesh) o.castShadow = true })
 

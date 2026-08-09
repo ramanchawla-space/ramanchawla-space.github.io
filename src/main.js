@@ -10,6 +10,7 @@ import { loadAssets } from './game/assets.js'
 import { NetHost, NetClient, MSG, randomRoom } from './net/net.js'
 import { RemoteRider } from './net/remote.js'
 import { UI, formatTime } from './ui/ui.js'
+import { Music } from './game/music.js'
 
 const STATE = { LOADING: 'loading', JOIN: 'join', LOBBY: 'lobby', COUNTDOWN: 'countdown', RACING: 'racing', FINISHED: 'finished' }
 const SEND_HZ = 15
@@ -31,6 +32,7 @@ class Game {
     this._sendAccum = 0
     this._clock = new THREE.Clock()
     this._elapsed = 0
+    this.music = new Music()
 
     this._initRenderer()
     this._bindUI()
@@ -70,6 +72,14 @@ class Game {
     this.ui.el.startRace.addEventListener('click', () => this._hostStartRace())
     this.ui.el.again.addEventListener('click', () => this._hostReturnToLobby())
     this.ui.el.copyLink.addEventListener('click', () => this._copyLink())
+
+    // Audio needs a user gesture to start — the join click is the first one
+    // guaranteed to happen for every player.
+    this.ui.el.joinGo.addEventListener('click', () => this.music.start(), { once: true })
+    this.ui.el.muteBtn.addEventListener('click', () => {
+      const muted = this.music.toggleMute()
+      this.ui.setMuted(muted)
+    })
   }
 
   async boot() {
@@ -137,6 +147,7 @@ class Game {
     if (name.length > 14) return this.ui.joinError('Nickname is too long')
 
     this.ui.joinError('')
+    this._roomWasFull = false
     this.ui.el.joinGo.disabled = true
     this.ui.el.joinGo.textContent = this.isHost ? 'Opening the paddock…' : 'Connecting…'
 
@@ -179,6 +190,9 @@ class Game {
     this.net = new NetClient(this.roomCode)
     this.net.on('message', (msg) => this._clientOnMessage(msg))
     this.net.on('hostgone', () => {
+      // Also fires when we close our own connection after being turned away
+      // for a full room — that rejection already showed its own message.
+      if (this._roomWasFull) return
       this.ui.connToast('The host left — the race has ended.', 0)
       if (this.state === STATE.RACING) this.input.disable()
     })
@@ -273,7 +287,14 @@ class Game {
 
     if (type === MSG.ROSTER) {
       if (data?.full) {
-        this.ui.connToast('That race is full.', 0)
+        this._roomWasFull = true
+        this.net.destroy()
+        this.net = null
+        this.state = STATE.JOIN
+        this.ui.show('join')
+        this.ui.el.joinGo.disabled = false
+        this.ui.el.joinGo.textContent = 'Join the race'
+        this.ui.joinError(`That race is full (max ${MAX_PLAYERS} riders).`)
         return
       }
       if (data?.late) {
