@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Bali Racer — Island Grand Prix</title>
+<meta name="description" content="Race scooters and bikes around a Balinese coastal circuit with your team." />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <script type="module" crossorigin src="/assets/index-Db1sn4U2.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/three-BrtUU--u.js">
+  <link rel="modulepreload" crossorigin href="/assets/peer-Bme-N3Hc.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-BWnYuYq9.css">
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- Loading -->
+  <div id="loading" class="screen">
+    <div class="loader-box">
+      <div class="logo">BALI<span>RACER</span></div>
+      <div class="bar"><div id="load-bar"></div></div>
+      <div id="load-text" class="muted">Warming up the island…</div>
+    </div>
+  </div>
+
+  <!-- Join / profile setup -->
+  <div id="join" class="screen hidden">
+    <div class="panel">
+      <div class="logo sm">BALI<span>RACER</span></div>
+      <p class="muted" id="join-sub">Set up your racer</p>
+
+      <label class="lbl">Nickname</label>
+      <input id="nick" maxlength="14" placeholder="e.g. Wayan" autocomplete="off" />
+
+      <label class="lbl">Pick your picture</label>
+      <div id="avatars" class="avatar-grid"></div>
+
+      <label class="lbl">Choose your ride</label>
+      <div class="vehicle-row">
+        <button class="vehicle" data-vehicle="scooter">
+          <div class="v-ico">🛵</div>
+          <div class="v-name">Scooter</div>
+          <div class="v-stat">Nimble · quick turns</div>
+        </button>
+        <button class="vehicle" data-vehicle="bike">
+          <div class="v-ico">🏍️</div>
+          <div class="v-name">Bike</div>
+          <div class="v-stat">Fast · high top speed</div>
+        </button>
+      </div>
+
+      <div id="join-err" class="err"></div>
+      <button id="join-go" class="primary">Join the race</button>
+    </div>
+  </div>
+
+  <!-- Lobby -->
+  <div id="lobby" class="screen hidden">
+    <div class="panel wide">
+      <div class="logo sm">BALI<span>RACER</span></div>
+      <p class="muted">Riders in the paddock</p>
+
+      <div id="host-share" class="share hidden">
+        <label class="lbl">Send this link to your colleagues</label>
+        <div class="share-row">
+          <input id="share-link" readonly />
+          <button id="copy-link" class="ghost">Copy</button>
+        </div>
+      </div>
+
+      <div id="player-list" class="player-list"></div>
+
+      <div id="lobby-status" class="muted center"></div>
+      <button id="start-race" class="primary hidden">Start the race</button>
+      <div id="laps-row" class="laps-row hidden">
+        <span class="lbl">Laps</span>
+        <button class="lapbtn" data-laps="1">1</button>
+        <button class="lapbtn active" data-laps="2">2</button>
+        <button class="lapbtn" data-laps="3">3</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-race HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-tl">
+      <div id="hud-pos" class="big">1<span class="ord">st</span></div>
+      <div id="hud-lap" class="muted">Lap 1/2</div>
+    </div>
+    <div class="hud-tr">
+      <div id="standings" class="standings"></div>
+    </div>
+    <button id="mute-btn" class="mute-btn" title="Mute music">🔊</button>
+    <div class="hud-br">
+      <div id="speedo" class="speedo">
+        <div id="speed-num">0</div><div class="kmh">km/h</div>
+      </div>
+    </div>
+    <div id="countdown" class="countdown hidden"></div>
+    <div id="lap-toast" class="toast hidden"></div>
+    <div id="wrongway" class="wrongway hidden">WRONG WAY</div>
+
+    <!-- Hazard feedback -->
+    <div id="damage" class="damage hidden"></div>
+    <div id="hazard-warn" class="hazard-warn hidden">
+      <span class="hw-ico">⚠</span>
+      <span class="hw-text"></span>
+      <span class="hw-bar"><span class="hw-fill"></span></span>
+    </div>
+    <div id="hazard-hit" class="hazard-hit hidden"></div>
+    <div id="zone-name" class="zone-name hidden"></div>
+
+    <div class="hud-controls muted">
+      <b>↑</b>/<b>W</b> throttle &nbsp; <b>↓</b>/<b>S</b> brake &nbsp; <b>←</b><b>→</b> steer &nbsp; <b>Space</b> drift &nbsp; <b>R</b> respawn
+    </div>
+  </div>
+
+  <!-- Mobile controls -->
+  <div id="touch" class="hidden">
+    <div class="t-left">
+      <button class="tbtn" id="t-left">◀</button>
+      <button class="tbtn" id="t-right">▶</button>
+    </div>
+    <div class="t-right">
+      <button class="tbtn" id="t-brake">▼</button>
+      <button class="tbtn go" id="t-gas">▲</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="screen hidden">
+    <div class="panel wide">
+      <div class="trophy">🏆</div>
+      <h1 class="win-title">Finish!</h1>
+      <div id="podium" class="podium"></div>
+      <div id="result-list" class="result-list"></div>
+      <button id="again" class="primary hidden">Back to lobby</button>
+      <div id="again-note" class="muted center"></div>
+    </div>
+  </div>
+
+  <div id="conn-toast" class="conn-toast hidden"></div>
+
+</body>
+</html>
